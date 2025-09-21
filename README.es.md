@@ -84,6 +84,51 @@ poetry run server-health-check -H example.com -p 22 -u root -y
    - Elimina referencias inválidas
    - Reinicia MySQL si es necesario
 
+## Prevención
+
+Los problemas de inconsistencia en los logs binarios de MySQL suelen ocurrir por varias razones:
+
+1. **Apagados Inesperados del Servidor**:
+   - Cortes de energía
+   - Fallos del sistema
+   - Detener MySQL forzadamente sin un apagado apropiado
+   
+2. **Problemas de Espacio en Disco**:
+   - Cuando el disco se llena, MySQL puede fallar al escribir nuevos logs
+   - Scripts de limpieza automática pueden borrar logs sin actualizar el índice
+   
+3. **Gestión Manual de Archivos**:
+   - Borrar manualmente archivos de log sin usar `PURGE BINARY LOGS`
+   - Manipulación directa del directorio de logs binarios
+
+Para prevenir estos problemas:
+
+1. **Apagado Correcto de MySQL**:
+   - Siempre usar comandos apropiados de apagado (`systemctl stop mysqld` o `service mysql stop`)
+   - Implementar UPS para protección contra cortes de energía
+   
+2. **Gestión de Logs Binarios**:
+   - Usar comandos integrados de MySQL para rotación de logs:
+     ```sql
+     PURGE BINARY LOGS TO 'mysql-bin.000XXX';
+     -- o
+     PURGE BINARY LOGS BEFORE DATE(NOW() - INTERVAL 7 DAY);
+     ```
+   - Configurar rotación automática en my.cnf:
+     ```ini
+     expire_logs_days = 7
+     ```
+   
+3. **Monitoreo de Espacio en Disco**:
+   - Configurar monitoreo de espacio en disco
+   - Configurar alertas cuando el uso del disco supere el 80%
+   - Archivar regularmente logs binarios antiguos
+
+4. **Copias de Seguridad Regulares**:
+   - Mantener copias de seguridad regulares de las bases de datos
+   - Probar procedimientos de restauración
+   - Mantener backups en almacenamiento separado
+
 ## Contribuciones
 
 ¡Las contribuciones son bienvenidas! No dudes en enviar un Pull Request.
