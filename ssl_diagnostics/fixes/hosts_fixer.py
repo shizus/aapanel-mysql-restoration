@@ -7,7 +7,7 @@ import re
 from typing import List, Dict, Tuple, Any
 from ..core.ssh_manager import SSHManager
 from ..core.user_interaction import UserInteraction
-from .hosts_analyzer import HostsAnalyzer
+from ..analyzers.hosts_analyzer import HostsAnalyzer
 
 class HostsFixer:
     def __init__(self, ssh_manager: SSHManager):
@@ -88,8 +88,8 @@ class HostsFixer:
     def _create_hosts_backup(self) -> bool:
         """Crear backup del archivo /etc/hosts"""
         try:
-            success, _ = self.ssh.execute_command("cp /etc/hosts /etc/hosts.backup")
-            return success
+            stdout, stderr, exit_code = self.ssh.execute_command("cp /etc/hosts /etc/hosts.backup")
+            return exit_code == 0
         except Exception as e:
             print(f"Error creando backup: {e}")
             return False
@@ -97,7 +97,8 @@ class HostsFixer:
     def _restore_from_backup(self) -> bool:
         """Restaurar archivo desde backup"""
         try:
-            success, _ = self.ssh.execute_command("cp /etc/hosts.backup /etc/hosts")
+            stdout, stderr, exit_code = self.ssh.execute_command("cp /etc/hosts.backup /etc/hosts")
+            success = exit_code == 0
             if success:
                 print("📋 Archivo restaurado desde backup")
             return success
@@ -232,15 +233,11 @@ class HostsFixer:
     def _write_hosts_file(self, content: str) -> bool:
         """Escribir contenido corregido al archivo /etc/hosts"""
         try:
-            # Escapar contenido para echo
-            escaped_content = content.replace("'", "'\"'\"'")
-            
-            # Escribir usando echo y redirección
-            command = f"echo '{escaped_content}' > /etc/hosts"
-            success, output = self.ssh.execute_command(command)
+            # Usar el método write_file del SSHManager
+            success = self.ssh.write_file("/etc/hosts", content)
             
             if not success:
-                print(f"Error escribiendo archivo: {output}")
+                print(f"Error escribiendo archivo")
             
             return success
         except Exception as e:

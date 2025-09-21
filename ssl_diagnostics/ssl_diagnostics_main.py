@@ -148,6 +148,9 @@ class SSLDiagnosticsMain:
     
     def _initialize_components(self):
         """Inicializar todos los componentes después de la conexión SSH"""
+        if not self.ssh:
+            raise ConnectionError("SSH connection not established")
+            
         self.nginx_manager = NginxManager(self.ssh)
         self.ssl_manager = SSLManager(self.ssh)
         self.hosts_analyzer = HostsAnalyzer(self.ssh)
@@ -161,6 +164,9 @@ class SSLDiagnosticsMain:
         
         if not self.ui.should_continue(step_id, "Ejecutar análisis inicial completo"):
             return {'skipped': True}
+        
+        if not self.hosts_analyzer or not self.nginx_analyzer or not self.ssl_manager:
+            raise RuntimeError("Components not initialized")
         
         print("🔍 Analizando archivo /etc/hosts...")
         hosts_analysis = self.hosts_analyzer.analyze_hosts_file()
@@ -189,10 +195,15 @@ class SSLDiagnosticsMain:
     
     def _fix_hosts_issues(self) -> Dict[str, Any]:
         """Corregir problemas en /etc/hosts"""
+        if not self.hosts_fixer:
+            raise RuntimeError("HostsFixer not initialized")
         return self.hosts_fixer.fix_all_issues()
     
     def _fix_nginx_issues(self) -> Dict[str, Any]:
         """Corregir problemas en nginx"""
+        if not self.nginx_fixer:
+            raise RuntimeError("NginxFixer not initialized")
+            
         results = {}
         
         # Corregir problemas específicos del dominio
@@ -211,6 +222,9 @@ class SSLDiagnosticsMain:
         
         if not self.ui.should_continue(step_id, f"Verificar SSL final para {self.target_domain}"):
             return {'skipped': True}
+        
+        if not self.ssl_manager or not self.nginx_manager:
+            raise RuntimeError("Components not initialized")
         
         print(f"🔒 Verificando SSL para {self.target_domain}...")
         
@@ -243,6 +257,9 @@ class SSLDiagnosticsMain:
         if not self.ui.should_continue(step_id, "Reiniciar servicios nginx"):
             return {'skipped': True}
         
+        if not self.nginx_manager or not self.ssh:
+            raise RuntimeError("Components not initialized")
+        
         print("🔄 Reiniciando nginx...")
         
         # Verificar configuración antes de reiniciar
@@ -254,15 +271,16 @@ class SSLDiagnosticsMain:
             return {'success': False, 'error': 'Errores de configuración nginx'}
         
         # Reiniciar nginx
-        restart_success, restart_output = self.ssh.execute_command("systemctl restart nginx")
+        stdout, stderr, exit_code = self.ssh.execute_command("systemctl restart nginx")
+        restart_success = exit_code == 0
         
         if restart_success:
             print("✅ Nginx reiniciado exitosamente")
             self.ui.mark_step_completed(step_id)
             return {'success': True}
         else:
-            print(f"❌ Error reiniciando nginx: {restart_output}")
-            return {'success': False, 'error': restart_output}
+            print(f"❌ Error reiniciando nginx: {stderr}")
+            return {'success': False, 'error': stderr}
     
     def _print_final_summary(self, results: Dict[str, Any]):
         """Imprimir resumen final del proceso"""

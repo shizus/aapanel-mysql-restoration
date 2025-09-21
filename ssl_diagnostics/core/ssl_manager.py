@@ -42,6 +42,32 @@ class SSLManager:
         
         return info
     
+    def analyze_ssl_status(self, domain: str) -> Dict[str, Any]:
+        """Analizar estado SSL completo para un dominio"""
+        cert_info = self.get_certificate_info(domain)
+        
+        analysis = {
+            'domain': domain,
+            'certificate_valid': False,
+            'certificate_info': cert_info,
+            'issues': []
+        }
+        
+        if not cert_info['cert_dir_exists']:
+            analysis['issues'].append({
+                'type': 'missing_cert_directory',
+                'description': f'Directorio de certificados no existe: {self.cert_dir}/{domain}'
+            })
+        elif not cert_info['fullchain_exists'] or not cert_info['privkey_exists']:
+            analysis['issues'].append({
+                'type': 'missing_cert_files',
+                'description': 'Archivos de certificado incompletos'
+            })
+        else:
+            analysis['certificate_valid'] = True
+        
+        return analysis
+    
     def _get_cert_details(self, cert_file: str) -> Dict[str, str]:
         """Extraer detalles del certificado"""
         details = {}

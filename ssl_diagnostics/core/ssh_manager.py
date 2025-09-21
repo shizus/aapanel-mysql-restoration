@@ -83,6 +83,28 @@ class SSHManager:
         _, _, exit_code = self.execute_command(f"test -f {filepath}")
         return exit_code == 0
     
+    def read_file(self, filepath: str) -> Tuple[bool, str]:
+        """Leer contenido de un archivo del servidor"""
+        try:
+            stdout, stderr, exit_code = self.execute_command(f"cat {filepath}")
+            if exit_code == 0:
+                return True, stdout
+            else:
+                return False, stderr
+        except Exception as e:
+            return False, str(e)
+    
+    def write_file(self, filepath: str, content: str) -> bool:
+        """Escribir contenido a un archivo del servidor"""
+        try:
+            # Escapar contenido para echo
+            escaped_content = content.replace("'", "'\"'\"'")
+            stdout, stderr, exit_code = self.execute_command(f"echo '{escaped_content}' > {filepath}")
+            return exit_code == 0
+        except Exception as e:
+            print(f"Error escribiendo archivo {filepath}: {e}")
+            return False
+    
     def backup_file(self, filepath: str, backup_suffix: Optional[str] = None) -> str:
         """Crear backup de un archivo"""
         if backup_suffix is None:

@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from ..core.ssh_manager import SSHManager
 from ..core.nginx_manager import NginxManager
 from ..core.user_interaction import UserInteraction
-from .nginx_analyzer import NginxAnalyzer
+from ..analyzers.nginx_analyzer import NginxAnalyzer
 
 class NginxFixer:
     def __init__(self, ssh_manager: SSHManager):
@@ -110,7 +110,8 @@ class NginxFixer:
         
         try:
             # Verificar que el archivo existe
-            exists, _ = self.ssh.execute_command(f"test -f {config_path}")
+            stdout, stderr, exit_code = self.ssh.execute_command(f"test -f {config_path}")
+            exists = exit_code == 0
             if not exists:
                 return {
                     'success': False,
@@ -118,7 +119,8 @@ class NginxFixer:
                 }
             
             # Renombrar para deshabilitar
-            success, output = self.ssh.execute_command(f"mv {config_path} {disabled_path}")
+            stdout, stderr, exit_code = self.ssh.execute_command(f"mv {config_path} {disabled_path}")
+            success = exit_code == 0
             
             if success:
                 return {
@@ -128,7 +130,7 @@ class NginxFixer:
             else:
                 return {
                     'success': False,
-                    'description': f"Error deshabilitando {config_name}: {output}"
+                    'description': f"Error deshabilitando {config_name}: {stderr}"
                 }
         
         except Exception as e:
@@ -151,7 +153,8 @@ class NginxFixer:
         
         try:
             # Verificar si ya existe
-            exists, _ = self.ssh.execute_command(f"test -f {config_path}")
+            stdout, stderr, exit_code = self.ssh.execute_command(f"test -f {config_path}")
+            exists = exit_code == 0
             if exists:
                 return {
                     'success': False,
@@ -294,12 +297,13 @@ class NginxFixer:
             disabled_file = f"{config_file}.disabled"
             
             try:
-                success, output = self.ssh.execute_command(f"mv {config_file} {disabled_file}")
+                stdout, stderr, exit_code = self.ssh.execute_command(f"mv {config_file} {disabled_file}")
+                success = exit_code == 0
                 if success:
                     results['interceptors_disabled'] += 1
                     print(f"✅ {config_name} deshabilitado")
                 else:
-                    results['errors'].append(f"Error deshabilitando {config_name}: {output}")
+                    results['errors'].append(f"Error deshabilitando {config_name}: {stderr}")
                     print(f"❌ Error deshabilitando {config_name}")
             except Exception as e:
                 results['errors'].append(f"Excepción deshabilitando {config_name}: {e}")

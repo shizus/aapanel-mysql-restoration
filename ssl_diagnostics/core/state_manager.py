@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional, Set
 
 class StateManager:
-    def __init__(self, domain: str, state_dir: str = None):
+    def __init__(self, domain: str, state_dir: Optional[str] = None):
         self.domain = domain
         self.state_dir = state_dir or os.path.join(os.path.dirname(__file__), '..', 'state')
         self.state_file = os.path.join(self.state_dir, f"{domain.replace('.', '_')}_state.json")
@@ -169,7 +169,7 @@ class StateManager:
         print(f"🔄 Estado reseteado para {self.domain}")
 
 # Función de utilidad para limpiar estados antiguos
-def cleanup_old_states(state_dir: str = None, days: int = 30):
+def cleanup_old_states(state_dir: Optional[str] = None, days: int = 30):
     """Limpiar archivos de estado más antiguos que X días"""
     if not state_dir:
         state_dir = os.path.join(os.path.dirname(__file__), '..', 'state')
