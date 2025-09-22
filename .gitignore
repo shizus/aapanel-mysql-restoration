@@ -58,6 +58,9 @@ htmlcov/
 .env
 .env.local
 
+# SSL Diagnostics State Files
+ssl_diagnostics/state/*.json
+
 # Operating System
 .DS_Store
 Thumbs.db
