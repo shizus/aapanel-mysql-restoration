@@ -13,6 +13,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ssl_diagnostics.ssl_diagnostics_main import SSLDiagnosticsMain
 from ssl_diagnostics.core.state_manager import StateManager, cleanup_old_states
+from ssl_diagnostics.core.ssh_manager import SSHManager
+from ssl_diagnostics.analyzers.panel_analyzer import AAPanelAnalyzer
 
 def cmd_diagnose(args):
     """Comando principal de diagnóstico"""
@@ -87,6 +89,50 @@ def cmd_list_states(args):
     
     return 0
 
+def cmd_panel_diagnose(args):
+    """Diagnostico de acceso aaPanel por host/puerto/ruta con auto-recuperacion opcional."""
+    print("Iniciando diagnostico aaPanel")
+
+    ssh = SSHManager()
+    if not ssh.connect():
+        print("Error: No se pudo establecer conexion SSH")
+        return 1
+
+    try:
+        analyzer = AAPanelAnalyzer(ssh)
+
+        analysis = analyzer.analyze_panel_endpoint(
+            public_host=args.host,
+            expected_port=args.expected_port,
+            expected_path=args.expected_path,
+        )
+
+        if not analysis.get("aapanel_running") and args.auto_start:
+            print("aaPanel esta caido. Intentando levantarlo con bt start...")
+            start_result = analyzer.start_aapanel_if_needed()
+
+            if start_result.get("already_running"):
+                print("aaPanel ya estaba en ejecucion.")
+            elif start_result.get("started"):
+                print("aaPanel levantado correctamente. Reejecutando diagnostico...")
+            else:
+                print("No se pudo levantar aaPanel automaticamente.")
+                if start_result.get("error"):
+                    print(f"Detalle: {start_result['error']}")
+
+            analysis = analyzer.analyze_panel_endpoint(
+                public_host=args.host,
+                expected_port=args.expected_port,
+                expected_path=args.expected_path,
+            )
+
+        print(analyzer.format_summary(analysis))
+
+        # Devolver codigo de salida no-cero si detectamos problemas
+        return 1 if analysis.get('issues') else 0
+    finally:
+        ssh.close()
+
 def main():
     """Función principal de CLI"""
     parser = argparse.ArgumentParser(
@@ -130,6 +176,21 @@ Ejemplos:
     # Comando list-states
     list_parser = subparsers.add_parser('list-states', help='Listar todos los archivos de estado')
     list_parser.set_defaults(func=cmd_list_states)
+
+    # Comando panel-diagnose
+    panel_parser = subparsers.add_parser(
+        'panel-diagnose',
+        help='Diagnosticar acceso a aaPanel por host/puerto/ruta (auto-start si esta caido)'
+    )
+    panel_parser.add_argument('host', help='Host publico, por ejemplo vps-xxxx.dattaweb.com')
+    panel_parser.add_argument('--expected-port', type=int, default=9898,
+                              help='Puerto esperado de aaPanel (default: 9898)')
+    panel_parser.add_argument('--expected-path', default='puerta8',
+                              help='Ruta esperada de aaPanel sin barras (default: puerta8)')
+    panel_parser.add_argument('--no-auto-start', action='store_false', dest='auto_start',
+                              help='No intentar levantar aaPanel automaticamente')
+    panel_parser.set_defaults(auto_start=True)
+    panel_parser.set_defaults(func=cmd_panel_diagnose)
     
     # Parse argumentos
     args = parser.parse_args()
@@ -141,10 +202,10 @@ Ejemplos:
     try:
         return args.func(args)
     except KeyboardInterrupt:
-        print(f"\n❌ Interrumpido por el usuario")
+        print("\nInterrumpido por el usuario")
         return 130
     except Exception as e:
-        print(f"❌ Error inesperado: {e}")
+        print(f"Error inesperado: {e}")
         return 1
 
 if __name__ == "__main__":

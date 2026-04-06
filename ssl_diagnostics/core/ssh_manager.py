@@ -45,11 +45,11 @@ class SSHManager:
                 username=self.config['username'],
                 password=self.config['password']
             )
-            print(f"✅ Conexión SSH establecida a {self.config['hostname']}:{self.config['port']}")
+            print(f"OK: Conexion SSH establecida a {self.config['hostname']}:{self.config['port']}")
             return True
             
         except Exception as e:
-            print(f"❌ Error conectando SSH: {e}")
+            print(f"ERROR conectando SSH: {e}")
             return False
     
     def execute_command(self, command: str, description: str = "") -> Tuple[str, str, int]:
@@ -60,7 +60,7 @@ class SSHManager:
             raise ConnectionError("No hay conexión SSH activa")
         
         if description:
-            print(f"\n🔧 {description}")
+            print(f"\nRUN: {description}")
             print(f"Comando: {command}")
         
         stdin, stdout, stderr = self.ssh.exec_command(command)
@@ -71,10 +71,10 @@ class SSHManager:
         
         # Filtrar warnings de npmrc
         if stderr_text and 'npmrc' not in stderr_text:
-            print(f"⚠️  Error: {stderr_text}")
+            print(f"WARN: {stderr_text}")
         
         if stdout_text:
-            print(f"✅ Resultado:\n{stdout_text}")
+            print(f"OUT:\n{stdout_text}")
         
         return stdout_text, stderr_text, exit_code
     
@@ -121,7 +121,7 @@ class SSHManager:
         """Cerrar conexión SSH"""
         if self.ssh:
             self.ssh.close()
-            print("🔒 Conexión SSH cerrada")
+            print("Conexion SSH cerrada")
     
     def __enter__(self):
         """Context manager entry"""

@@ -56,6 +56,18 @@ ssl_diagnostics/
 python ssl_cli.py diagnose ejemplo.com
 ```
 
+### Diagnóstico aaPanel (host/puerto/ruta)
+```bash
+python ssl_cli.py panel-diagnose vps-2191785-x.dattaweb.com --expected-port 9898 --expected-path puerta8
+```
+
+Por defecto, si aaPanel está caído el comando intenta levantarlo con `bt start` y luego re-ejecuta el diagnóstico.
+
+Para desactivar ese comportamiento:
+```bash
+python ssl_cli.py panel-diagnose vps-2191785-x.dattaweb.com --expected-port 9898 --expected-path puerta8 --no-auto-start
+```
+
 ### Ver Estado Actual
 ```bash
 python ssl_cli.py state ejemplo.com --show
@@ -108,6 +120,12 @@ SSH_PASSWORD=contraseña
 | `state <dominio> --clear-step <id>` | Limpia paso específico |
 | `cleanup --days <n>` | Limpia estados antiguos |
 | `list-states` | Lista todos los estados |
+| `panel-diagnose <host> [--expected-port N] [--expected-path ruta]` | Diagnostica acceso aaPanel y lo levanta si está caído |
+
+## Seguridad Operativa
+
+- `panel-diagnose` puede ejecutar `bt start` si aaPanel está caído, pero no toca configuraciones de nginx de sitios.
+- Para mantener `70ideas.com.ar` estable, usar `panel-diagnose` antes de aplicar fixes de nginx.
 
 ## Desarrollo
 
