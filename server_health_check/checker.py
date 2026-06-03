@@ -100,8 +100,9 @@ class ServerHealthCheck:
         # Ensure last_valid is zero-padded to 6 digits (e.g., 000797)
         next_valid_padded = f"{int(last_valid) + 1:06d}"
         command = (
-            f"grep -v -E 'mysql-bin\\.[0-9]{{6,}}$' /www/server/data/mysql-bin.index | "
-            f"grep -v 'mysql-bin.{next_valid_padded}' > /www/server/data/mysql-bin.index.tmp"
+            "sed -e '/mysql-bin\\.[0-9]\\{6,\\}$/d' "
+            f"-e '/mysql-bin\\.{next_valid_padded}$/d' "
+            "/www/server/data/mysql-bin.index > /www/server/data/mysql-bin.index.tmp"
         )
         _, _, status = self.execute_command(command)
         if status != 0:
