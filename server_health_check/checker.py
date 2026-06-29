@@ -122,9 +122,23 @@ class ServerHealthCheck:
         print("Index file fixed successfully.")
         return True
 
+    def restore_mysql_data_ownership(self) -> bool:
+        """Restores mysql ownership for files under the data directory."""
+        print("\nRestoring MySQL data directory ownership...")
+        _, _, status = self.execute_command("chown -R mysql:mysql /www/server/data/")
+        if status == 0:
+            print("Ownership restored successfully.")
+            return True
+
+        print("Error restoring data directory ownership.")
+        return False
+
     def restart_mysql(self) -> bool:
         """Restarts MySQL service."""
         print("\nRestarting MySQL...")
+        if not self.restore_mysql_data_ownership():
+            return False
+
         _, _, status = self.execute_command("systemctl restart mysqld")
         if status == 0:
             print("MySQL restarted successfully.")

@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug server-health-check",
+      "type": "python",
+      "request": "launch",
+      "module": "server_health_check.main",
+      "args": [
+        "-H",
+        "70ideas.com.ar",
+        "-p",
+        "5680",
+        "-u",
+        "root",
+        "-y"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

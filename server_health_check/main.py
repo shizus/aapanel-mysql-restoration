@@ -57,7 +57,16 @@ def main():
             else:
                 print("\nOperation cancelled by user.")
         else:
-            print("\nNo issues found with binary logs.")
+            print("\nNo issues detected with MySQL binary logs.")
+            
+            if not checker.check_mysql_status():
+                print("\nMySQL is not running. Attempting restart before reporting no issues...")
+                if checker.restart_mysql() and checker.check_mysql_status():
+                    print("\nMySQL is running properly.")
+                else:
+                    print("\nMySQL could not start properly.")
+            else:
+                print("\nMySQL is running properly.")
 
     finally:
         checker.close()
